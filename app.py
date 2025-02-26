@@ -217,7 +217,8 @@ class DataAnalyzer:
                     break  # Only create one such visualization
         
         return visualizations
-
+        
+    @app.route('/insights', methods=['POST', 'OPTIONS'])
     def generate_insights(self) -> List[str]:
         """Generate text insights for the frontend"""
         insights = []
