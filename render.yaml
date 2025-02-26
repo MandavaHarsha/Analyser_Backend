@@ -1,0 +1,7 @@
+services:
+  - name: backend
+    type: web
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -w 4 -b 0.0.0.0:5000 app:app
+    plan: free

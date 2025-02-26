@@ -1,0 +1,11 @@
+Flask
+flask-cors
+pandas
+numpy
+PyYAML
+matplotlib
+plotly
+scikit-learn
+scipy
+seaborn
+threadpoolctl
