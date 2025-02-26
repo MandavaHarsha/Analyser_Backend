@@ -32,7 +32,7 @@ plt.style.use('ggplot')
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Configure logging
 logging.basicConfig(
@@ -57,8 +57,14 @@ except FileNotFoundError:
         }
     }
 
+    # Define home route
+@app.route("/")
+def home():
+    return jsonify({"message": "Backend is running!"})
+
 
 class DataAnalyzer:
+
     def __init__(self, df: pd.DataFrame):
         self.df = df
         self.sample_size = min(len(df), 10000)
@@ -350,6 +356,8 @@ def generate_insights():
     except Exception as e:
         logger.exception("Error generating insights")
         return jsonify({'error': str(e)}), 500
+    
 
-if __name__ == '__main__':
-    app.run(debug=True, threaded=True)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
