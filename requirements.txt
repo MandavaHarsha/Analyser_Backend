@@ -1,11 +1,11 @@
-Flask
+flask
 flask-cors
 pandas
 numpy
-PyYAML
-matplotlib
+pyyaml
 plotly
-scikit-learn
 scipy
+scikit-learn
+matplotlib
 seaborn
-threadpoolctl
+gunicorn
