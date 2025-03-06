@@ -119,3 +119,18 @@ domains:
       - [vehicle_id, route]
       - [distance, fuel]
       - [station, fare]
+  others:
+    keywords:
+      - alertname
+      - alertstate
+      - service
+      - site
+      - state
+      - severity
+      - first_triggered
+      - last_triggered
+    relationships:
+      - [alertname, alertstate]
+      - [service, site]
+      - [state, severity]
+      - [first_triggered, last_triggered]
