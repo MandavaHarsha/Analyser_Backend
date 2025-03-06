@@ -1,0 +1,121 @@
+domains:
+  ecommerce:
+    keywords:
+      - order_id
+      - product_name
+      - price
+      - quantity
+      - customer_id
+      - category
+      - sales
+      - discount
+      - order_date
+      - city
+      - payment_method
+    relationships:
+      - [order_id, product_name]
+      - [price, discount]
+      - [category, sales]
+    required_columns:
+      order_id: [orderid, order_number, order]
+      order_date: [date, orderdate, purchase_date]
+      product_name: [product, item_name, product_id]
+      price: [unit_price, product_price, amount]
+      quantity: [qty, item_quantity, units]
+      customer_id: [custid, cust_id, customerid]
+      city: [location, customer_city, ship_city]
+      payment_method: [payment, payment_type, pay_method]
+  education:
+    keywords:
+      - student_id
+      - grade
+      - subject
+      - teacher
+      - marks
+      - attendance
+      - course
+      - university
+    relationships:
+      - [student_id, marks]
+      - [course, teacher]
+      - [university, attendance]
+  finance:
+    keywords:
+      - revenue
+      - profit
+      - expenses
+      - tax
+      - cost
+      - income
+      - investment
+      - assets
+      - liabilities
+    relationships:
+      - [revenue, expenses]
+      - [profit, tax]
+      - [assets, liabilities]
+  health:
+    keywords:
+      - patient_id
+      - diagnosis
+      - medication
+      - hospital_name
+      - age
+      - gender
+      - disease
+      - doctor_name
+    relationships:
+      - [patient_id, diagnosis]
+      - [patient_id, medication]
+      - [hospital_name, doctor_name]
+    required_columns:
+      patient_id: [pat_id, patientid]
+      age: [patient_age, years_old]
+      gender: [sex, patient_gender]
+      diagnosis: [medical_condition, disease]
+      doctor_name: [physician, consultant]
+      hospital_name: [clinic, medical_center]
+  hr:
+    keywords:
+      - employee_id
+      - department
+      - salary
+      - designation
+      - experience
+      - attendance
+      - performance
+      - hiring_date
+      - termination_date
+    relationships:
+      - [employee_id, department]
+      - [employee_id, performance]
+      - [designation, salary]
+      - [hiring_date, termination_date]
+  retail:
+    keywords:
+      - store_id
+      - product
+      - sales
+      - inventory
+      - region
+      - price
+      - category
+      - profit
+    relationships:
+      - [store_id, sales]
+      - [inventory, product]
+      - [region, profit]
+  transportation:
+    keywords:
+      - vehicle_id
+      - route
+      - distance
+      - fuel
+      - driver
+      - passenger
+      - station
+      - fare
+    relationships:
+      - [vehicle_id, route]
+      - [distance, fuel]
+      - [station, fare]
