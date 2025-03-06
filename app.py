@@ -407,7 +407,11 @@ def upload_file():
         columns = df.columns.tolist()
         
         domain, domain_scores, insights_button_enabled = infer_domain(columns)
-        
+
+        # Ensure 'others' is used if no domain is detected (all scores are zero)
+        if all(score == 0 for score in domain_scores.values()):
+            domain = 'others'
+
         return jsonify({
             'columns': columns,
             'detected_domain': domain,
@@ -420,6 +424,7 @@ def upload_file():
     except Exception as e:
         logger.exception("Error processing file upload")
         return jsonify({'error': str(e)}), 500
+
 
 @app.route('/insights', methods=['POST'])
 def generate_insights():
