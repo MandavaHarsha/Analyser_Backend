@@ -48,7 +48,8 @@ try:
     with open(knowledge_base_path, 'r') as file:
         knowledge_base = yaml.safe_load(file)
 except FileNotFoundError:
-knowledge_base = {
+
+    knowledge_base = {
     "domains": {
         "ecommerce": {
             "keywords": [
