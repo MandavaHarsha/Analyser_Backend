@@ -342,6 +342,8 @@ class DataAnalyzer:
         
         return insights
 
+import re
+
 def infer_domain(columns):
     """Infer the domain based on column names and check required columns"""
     domain_scores = {}
@@ -371,19 +373,23 @@ def infer_domain(columns):
         required_column_matches[domain] = matched_required_columns
 
     # Identify the best-matching domain
-    best_match = max(domain_scores.items(), key=lambda x: x[1])[0]
+    best_match, max_score = max(domain_scores.items(), key=lambda x: x[1])
+
+    # Default to 'others' if all scores are zero
+    if max_score == 0:
+        best_match = 'others'
 
     # Check if at least 50% of the required columns exist
     required_col_count = len(knowledge_base['domains'][best_match].get('required_columns', {}))
-
+    
     if required_col_count > 0:
-        coverage = required_column_matches[best_match] / required_col_count
-        print(f"Domain: {best_match}, Required Columns: {required_col_count}, Matched: {required_column_matches[best_match]}, Coverage: {coverage}")  # Debug print
+        coverage = required_column_matches.get(best_match, 0) / required_col_count
         insights_button_enabled = coverage >= 0.5
     else:
         insights_button_enabled = False  # If no required columns are defined, disable button
 
     return best_match, domain_scores, insights_button_enabled
+
 
 
 @app.route('/upload', methods=['POST'])
