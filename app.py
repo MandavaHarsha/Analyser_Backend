@@ -240,33 +240,13 @@ except FileNotFoundError:
         },
         'media': {
             'columns': {
-                'news': ['news', 'journalism', 'report','alert','alertname'],
-                'publication': ['publication', 'magazine', 'journal'],
-                'broadcast': ['broadcast', 'tv', 'radio'],
-                'press': ['press', 'media', 'editorial','severity','description']
+                'alertname': ['alertname', 'alertstate', 'report','alert','alertname'],
+                'severity': ['severity','severity','service',],
+                'job': ['job'],
+                'first_triggered': ['activeAt', 'first_triggered', 'last_triggered','severity','description']
             }
         },
-        'art': {
-            'columns': {
-                'painting': ['painting', 'canvas', 'oil', 'watercolor'],
-                'sculpture': ['sculpture', 'statue', 'carving'],
-                'gallery': ['gallery', 'exhibition', 'museum'],
-                'artist': ['artist', 'painter', 'creator'],
-                'creative': ['creative', 'artistic', 'design']
-            }
-        },
-        'history': {
-            'columns': {
-                'timeline': ['timeline', 'history', 'chronology'],
-                'heritage': ['heritage', 'legacy', 'tradition'],
-                'archive': ['archive', 'document', 'record']
-            }
-        },
-        'general': {
-            'columns': {
-                'miscellaneous': ['severity', 'alertname', 'alertstate', 'activeAt']
-            }
-        },
+        
         'others': {
             'columns': {
                 'unknown': []  # If no matching keywords are found, this category is used.
