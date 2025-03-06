@@ -48,212 +48,97 @@ try:
     with open(knowledge_base_path, 'r') as file:
         knowledge_base = yaml.safe_load(file)
 except FileNotFoundError:
-    knowledge_base = {
-    'domains': {
-        'business': {
-            'columns': {
-                'revenue': ['revenue', 'income', 'earnings', 'turnover'],
-                'sales': ['sales', 'orders', 'transactions'],
-                'profit': ['profit', 'margin', 'net income'],
-                'cost': ['cost', 'expense', 'spending'],
-                'investment': ['investment', 'funding', 'capital'],
-                'market': ['market', 'opportunity', 'demand'],
-                'strategy': ['strategy', 'plan', 'business model'],
-                'budget': ['budget', 'expenditure', 'allocation']
+knowledge_base = {
+    "domains": {
+        "ecommerce": {
+            "keywords": [
+                "order_id", "product_name", "price", "quantity", "customer_id", "category", "sales",
+                "discount", "order_date", "city", "payment_method"
+            ],
+            "relationships": [
+                ["order_id", "product_name"],
+                ["price", "discount"],
+                ["category", "sales"]
+            ],
+            "required_columns": {
+                "order_id": ["orderid", "order_number", "order"],
+                "order_date": ["date", "orderdate", "purchase_date"],
+                "product_name": ["product", "item_name", "product_id"],
+                "price": ["unit_price", "product_price", "amount"],
+                "quantity": ["qty", "item_quantity", "units"],
+                "customer_id": ["custid", "cust_id", "customerid"],
+                "city": ["location", "customer_city", "ship_city"],
+                "payment_method": ["payment", "payment_type", "pay_method"]
             }
         },
-        'healthcare': {
-            'columns': {
-                'patient': ['patient', 'client', 'case'],
-                'diagnosis': ['diagnosis', 'condition', 'symptom'],
-                'treatment': ['treatment', 'therapy', 'intervention'],
-                'medical': ['medical', 'health', 'clinical'],
-                'hospital': ['hospital', 'clinic', 'facility']
+        "education": {
+            "keywords": ["student_id", "grade", "subject", "teacher", "marks", "attendance", "course", "university"],
+            "relationships": [
+                ["student_id", "marks"],
+                ["course", "teacher"],
+                ["university", "attendance"]
+            ]
+        },
+        "finance": {
+            "keywords": ["revenue", "profit", "expenses", "tax", "cost", "income", "investment", "assets", "liabilities"],
+            "relationships": [
+                ["revenue", "expenses"],
+                ["profit", "tax"],
+                ["assets", "liabilities"]
+            ]
+        },
+        "health": {
+            "keywords": ["patient_id", "diagnosis", "medication", "hospital_name", "age", "gender", "disease", "doctor_name"],
+            "relationships": [
+                ["patient_id", "diagnosis"],
+                ["patient_id", "medication"],
+                ["hospital_name", "doctor_name"]
+            ],
+            "required_columns": {
+                "patient_id": ["pat_id", "patientid"],
+                "age": ["patient_age", "years_old"],
+                "gender": ["sex", "patient_gender"],
+                "diagnosis": ["medical_condition", "disease"],
+                "doctor_name": ["physician", "consultant"],
+                "hospital_name": ["clinic", "medical_center"]
             }
         },
-        'education': {
-            'columns': {
-                'student': ['student', 'pupil', 'learner'],
-                'grade': ['grade', 'score', 'mark'],
-                'course': ['course', 'class', 'subject', 'curriculum'],
-                'teacher': ['teacher', 'instructor', 'professor']
-            }
+        "hr": {
+            "keywords": ["employee_id", "department", "salary", "designation", "experience", "attendance", "performance", "hiring_date", "termination_date"],
+            "relationships": [
+                ["employee_id", "department"],
+                ["employee_id", "performance"],
+                ["designation", "salary"],
+                ["hiring_date", "termination_date"]
+            ]
         },
-        'technology': {
-            'columns': {
-                'software': ['software', 'application', 'program', 'app'],
-                'hardware': ['hardware', 'device', 'computer', 'equipment'],
-                'network': ['network', 'internet', 'connectivity', 'cybersecurity'],
-                'data': ['data', 'information', 'database', 'analytics'],
-                'AI': ['AI', 'artificial intelligence', 'machine learning', 'neural network']
-            }
+        "retail": {
+            "keywords": ["store_id", "product", "sales", "inventory", "region", "price", "category", "profit"],
+            "relationships": [
+                ["store_id", "sales"],
+                ["inventory", "product"],
+                ["region", "profit"]
+            ]
         },
-        'sports': {
-            'columns': {
-                'game': ['game', 'match', 'competition'],
-                'score': ['score', 'result', 'points'],
-                'team': ['team', 'squad', 'club'],
-                'player': ['player', 'athlete', 'competitor'],
-                'tournament': ['tournament', 'league', 'championship']
-            }
+        "transportation": {
+            "keywords": ["vehicle_id", "route", "distance", "fuel", "driver", "passenger", "station", "fare"],
+            "relationships": [
+                ["vehicle_id", "route"],
+                ["distance", "fuel"],
+                ["station", "fare"]
+            ]
         },
-        'entertainment': {
-            'columns': {
-                'movie': ['movie', 'film', 'cinema'],
-                'music': ['music', 'song', 'album'],
-                'tv': ['tv', 'television', 'series'],
-                'celebrity': ['celebrity', 'star', 'artist'],
-                'show': ['show', 'performance', 'event']
-            }
-        },
-        'politics': {
-            'columns': {
-                'election': ['election', 'vote', 'ballot'],
-                'government': ['government', 'administration', 'executive'],
-                'policy': ['policy', 'regulation', 'law'],
-                'campaign': ['campaign', 'political', 'candidate'],
-                'legislation': ['legislation', 'bill', 'act']
-            }
-        },
-        'science': {
-            'columns': {
-                'research': ['research', 'study', 'investigation'],
-                'experiment': ['experiment', 'trial', 'test'],
-                'discovery': ['discovery', 'breakthrough', 'finding'],
-                'laboratory': ['laboratory', 'lab', 'facility']
-            }
-        },
-        'finance': {
-            'columns': {
-                'banking': ['banking', 'bank', 'financial institution'],
-                'investment': ['investment', 'invest', 'capital'],
-                'stock': ['stock', 'share', 'equity'],
-                'portfolio': ['portfolio', 'assets', 'holdings'],
-                'trading': ['trading', 'exchange', 'market'],
-                'interest': ['interest', 'rate', 'yield'],
-                'bond': ['bond', 'debt', 'security']
-            }
-        },
-        'travel': {
-            'columns': {
-                'flight': ['flight', 'airline', 'aviation'],
-                'hotel': ['hotel', 'accommodation', 'lodging'],
-                'booking': ['booking', 'reservation', 'schedule'],
-                'destination': ['destination', 'location', 'spot'],
-                'trip': ['trip', 'journey', 'tour']
-            }
-        },
-        'food': {
-            'columns': {
-                'restaurant': ['restaurant', 'diner', 'eatery'],
-                'cuisine': ['cuisine', 'food', 'dish'],
-                'recipe': ['recipe', 'cooking', 'preparation'],
-                'meal': ['meal', 'dinner', 'lunch', 'breakfast'],
-                'chef': ['chef', 'cook', 'culinary']
-            }
-        },
-        'lifestyle': {
-            'columns': {
-                'fashion': ['fashion', 'style', 'clothing'],
-                'beauty': ['beauty', 'cosmetic', 'makeup'],
-                'wellness': ['wellness', 'health', 'fitness'],
-                'leisure': ['leisure', 'hobby', 'recreation'],
-                'home': ['home', 'house', 'residence'],
-                'design': ['design', 'interior', 'architecture']
-            }
-        },
-        'environment': {
-            'columns': {
-                'climate': ['climate', 'weather', 'temperature'],
-                'sustainability': ['sustainability', 'renewable', 'eco-friendly'],
-                'ecology': ['ecology', 'ecosystem', 'biodiversity'],
-                'conservation': ['conservation', 'protection', 'preservation'],
-                'pollution': ['pollution', 'contamination', 'waste']
-            }
-        },
-        'automotive': {
-            'columns': {
-                'car': ['car', 'automobile', 'vehicle'],
-                'engine': ['engine', 'motor', 'powertrain'],
-                'driving': ['driving', 'road', 'transportation'],
-                'fuel': ['fuel', 'gasoline', 'diesel'],
-                'tire': ['tire', 'rubber', 'wheel']
-            }
-        },
-        'real_estate': {
-            'columns': {
-                'property': ['property', 'real estate', 'asset'],
-                'housing': ['housing', 'home', 'residence'],
-                'mortgage': ['mortgage', 'loan', 'financing'],
-                'rent': ['rent', 'rental', 'lease'],
-                'sale': ['sale', 'sell', 'market'],
-                'listing': ['listing', 'advertisement', 'catalog'],
-                'realtor': ['realtor', 'agent', 'broker']
-            }
-        },
-        'retail': {
-            'columns': {
-                'store': ['store', 'shop', 'boutique'],
-                'shopping': ['shopping', 'consumer', 'purchase'],
-                'product': ['product', 'item', 'merchandise'],
-                'inventory': ['inventory', 'stock', 'supply'],
-                'brand': ['brand', 'label', 'trademark']
-            }
-        },
-        'telecommunications': {
-            'columns': {
-                'network': ['network', 'telecom', 'communication'],
-                'mobile': ['mobile', 'cellular', 'smartphone'],
-                'broadband': ['broadband', 'internet', 'connectivity'],
-                'signal': ['signal', 'coverage', 'reception'],
-                'wireless': ['wireless', 'wifi', 'bluetooth']
-            }
-        },
-        'agriculture': {
-            'columns': {
-                'farming': ['farming', 'agriculture', 'cultivation'],
-                'crop': ['crop', 'harvest', 'produce'],
-                'livestock': ['livestock', 'animal', 'farm'],
-                'irrigation': ['irrigation', 'watering', 'drip'],
-                'soil': ['soil', 'earth', 'land'],
-                'organic': ['organic', 'natural', 'bio']
-            }
-        },
-        'energy': {
-            'columns': {
-                'oil': ['oil', 'petroleum', 'crude'],
-                'gas': ['gas', 'natural gas', 'fuel'],
-                'electricity': ['electricity', 'power', 'energy'],
-                'renewable': ['renewable', 'solar', 'wind', 'hydro'],
-                'nuclear': ['nuclear', 'atomic', 'radiation']
-            }
-        },
-        'legal': {
-            'columns': {
-                'law': ['law', 'legal', 'regulation'],
-                'litigation': ['litigation', 'lawsuit', 'court'],
-                'attorney': ['attorney', 'lawyer', 'counsel'],
-                'contract': ['contract', 'agreement', 'deal'],
-                'compliance': ['compliance', 'regulation', 'standards'],
-                'justice': ['justice', 'court', 'verdict']
-            }
-        },
-        'media': {
-            'columns': {
-                'alertname': ['alertname', 'alertstate', 'report','alert','alertname'],
-                'severity': ['severity','severity','service',],
-                'job': ['job'],
-                'first_triggered': ['activeAt', 'first_triggered', 'last_triggered','severity','description']
-            }
-        },
-        
-        'others': {
-            'columns': {
-                'unknown': []  # If no matching keywords are found, this category is used.
-            }
+        "others": {
+            "keywords": ["alertname", "alertstate", "service", "site", "state", "severity", "first_triggered", "last_triggered"],
+            "relationships": [
+                ["alertname", "alertstate"],
+                ["service", "site"],
+                ["state", "severity"],
+                ["first_triggered", "last_triggered"]
+            ]
         }
     }
-    }
+}
     
 
     # Define home route
