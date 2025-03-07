@@ -343,86 +343,101 @@ class DataAnalyzer:
         
         return insights
 
-import re
-
 def infer_domain(columns):
     """Infer the domain based on column names and check required columns"""
+    logger.info(f"Starting domain inference with columns: {columns}")
     domain_scores = {}
     required_column_matches = {}
-
     for domain, info in knowledge_base['domains'].items():
         keywords = set(info.get('keywords', []))
         required_columns = info.get('required_columns', {})
-
         # Count keyword matches
         keyword_match_count = sum(
             1 for col in columns if any(re.search(r'\b' + re.escape(keyword) + r'\b', col, re.IGNORECASE) 
             for keyword in keywords)
         )
         domain_scores[domain] = keyword_match_count
-
         # Count required column matches correctly
         matched_required_columns = 0
         for required_col, aliases in required_columns.items():
             # Check if the exact required column name is present
             if required_col in columns:
                 matched_required_columns += 1
+                logger.debug(f"Found exact required column '{required_col}' for domain '{domain}'")
             # Check if any alias matches
             elif any(alias in columns for alias in aliases):
-                matched_required_columns += 1  
-
+                matched_required_columns += 1
+                matched_alias = next(alias for alias in aliases if alias in columns)
+                logger.debug(f"Found alias '{matched_alias}' for required column '{required_col}' in domain '{domain}'")
         required_column_matches[domain] = matched_required_columns
-
+        logger.debug(f"Domain '{domain}' has {keyword_match_count} keyword matches and {matched_required_columns} required column matches")
+    
     # Identify the best-matching domain
     best_match, max_score = max(domain_scores.items(), key=lambda x: x[1])
-
+    logger.info(f"Initial best match: '{best_match}' with score {max_score}")
+    
     # Default to 'others' if all scores are zero
     if max_score == 0:
         best_match = 'others'
-
+        logger.info(f"All scores are zero, defaulting to domain 'others'")
+    
     # Check if at least 50% of the required columns exist
     required_col_count = len(knowledge_base['domains'][best_match].get('required_columns', {}))
     
     if required_col_count > 0:
         coverage = required_column_matches.get(best_match, 0) / required_col_count
         insights_button_enabled = coverage >= 0.5
+        logger.info(f"Required column coverage for '{best_match}': {coverage:.2f} ({required_column_matches.get(best_match, 0)}/{required_col_count})")
     else:
         insights_button_enabled = False  # If no required columns are defined, disable button
-
+        logger.info(f"No required columns defined for '{best_match}', insights button disabled")
+    
+    logger.info(f"Final domain determination: '{best_match}', insights button enabled: {insights_button_enabled}")
     return best_match, domain_scores, insights_button_enabled
-
-
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
+    logger.info("File upload request received")
+    
     if 'file' not in request.files:
+        logger.warning("No file part in request")
         return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
     if file.filename == '':
+        logger.warning("Empty filename submitted")
         return jsonify({'error': 'No selected file'}), 400
+    
+    logger.info(f"Processing file: {file.filename}")
     
     try:
         df = pd.read_csv(file)
         columns = df.columns.tolist()
+        logger.info(f"File successfully parsed with {len(columns)} columns: {columns}")
         
         domain, domain_scores, insights_button_enabled = infer_domain(columns)
-
+        
         # Ensure 'others' is used if no domain is detected (all scores are zero)
         if all(score == 0 for score in domain_scores.values()):
             domain = 'others'
-
-        return jsonify({
+            logger.info("All domain scores are zero, setting domain to 'others'")
+        
+        response_data = {
             'columns': columns,
             'detected_domain': domain,
             'domain_scores': domain_scores,
             'all_domains': list(knowledge_base['domains'].keys()),
             'insights_button_enabled': insights_button_enabled,
             'data': df.to_dict('records')
-        })
+        }
+        
+        logger.info(f"Returning response with detected domain: '{domain}', insights button: {insights_button_enabled}")
+        logger.debug(f"Full domain scores: {domain_scores}")
+        
+        return jsonify(response_data)
     
     except Exception as e:
-        logger.exception("Error processing file upload")
+        logger.exception(f"Error processing file upload: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 
