@@ -347,12 +347,18 @@ def infer_domain(columns):
     """Infer the domain based on column names"""
     logger.info(f"Starting domain inference with columns: {columns}")
     domain_scores = {}
+
     for domain, info in knowledge_base['domains'].items():
         keywords = set(info.get('keywords', []))
+        
         # Count keyword matches
         keyword_match_count = sum(
-            1 for col in columns if any(re.search(r'\b' + re.escape(keyword) + r'\b', col, re.IGNORECASE) 
-            for keyword in keywords)
+            1 for col in columns if any(
+                re.search(r'\b' + re.escape(keyword) + r'\b', col, re.IGNORECASE)
+                for keyword in keywords
+            )
+        ) 
+
         domain_scores[domain] = keyword_match_count
         logger.debug(f"Domain '{domain}' has {keyword_match_count} keyword matches")
     
@@ -363,7 +369,7 @@ def infer_domain(columns):
     # Default to 'others' if all scores are zero
     if max_score == 0:
         best_match = 'others'
-        logger.info(f"All scores are zero, defaulting to domain 'others'")
+        logger.info("All scores are zero, defaulting to domain 'others'")
     
     logger.info(f"Final domain determination: '{best_match}'")
     return best_match, domain_scores
