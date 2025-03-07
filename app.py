@@ -397,47 +397,34 @@ def infer_domain(columns):
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
-    logger.info("File upload request received")
-    
     if 'file' not in request.files:
-        logger.warning("No file part in request")
         return jsonify({'error': 'No file part'}), 400
     
     file = request.files['file']
     if file.filename == '':
-        logger.warning("Empty filename submitted")
         return jsonify({'error': 'No selected file'}), 400
-    
-    logger.info(f"Processing file: {file.filename}")
     
     try:
         df = pd.read_csv(file)
         columns = df.columns.tolist()
-        logger.info(f"File successfully parsed with {len(columns)} columns: {columns}")
         
         domain, domain_scores, insights_button_enabled = infer_domain(columns)
-        
         # Ensure 'others' is used if no domain is detected (all scores are zero)
         if all(score == 0 for score in domain_scores.values()):
             domain = 'others'
-            logger.info("All domain scores are zero, setting domain to 'others'")
         
-        response_data = {
+        # Make sure keys match what frontend expects
+        return jsonify({
             'columns': columns,
-            'detected_domain': domain,
+            'detected_domain': domain,  # This is the key field that frontend expects
             'domain_scores': domain_scores,
             'all_domains': list(knowledge_base['domains'].keys()),
             'insights_button_enabled': insights_button_enabled,
             'data': df.to_dict('records')
-        }
-        
-        logger.info(f"Returning response with detected domain: '{domain}', insights button: {insights_button_enabled}")
-        logger.debug(f"Full domain scores: {domain_scores}")
-        
-        return jsonify(response_data)
+        })
     
     except Exception as e:
-        logger.exception(f"Error processing file upload: {str(e)}")
+        logger.exception("Error processing file upload")
         return jsonify({'error': str(e)}), 500
 
 
