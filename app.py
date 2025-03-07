@@ -344,33 +344,17 @@ class DataAnalyzer:
         return insights
 
 def infer_domain(columns):
-    """Infer the domain based on column names and check required columns"""
+    """Infer the domain based on column names"""
     logger.info(f"Starting domain inference with columns: {columns}")
     domain_scores = {}
-    required_column_matches = {}
     for domain, info in knowledge_base['domains'].items():
         keywords = set(info.get('keywords', []))
-        required_columns = info.get('required_columns', {})
         # Count keyword matches
         keyword_match_count = sum(
             1 for col in columns if any(re.search(r'\b' + re.escape(keyword) + r'\b', col, re.IGNORECASE) 
             for keyword in keywords)
-        )
         domain_scores[domain] = keyword_match_count
-        # Count required column matches correctly
-        matched_required_columns = 0
-        for required_col, aliases in required_columns.items():
-            # Check if the exact required column name is present
-            if required_col in columns:
-                matched_required_columns += 1
-                logger.debug(f"Found exact required column '{required_col}' for domain '{domain}'")
-            # Check if any alias matches
-            elif any(alias in columns for alias in aliases):
-                matched_required_columns += 1
-                matched_alias = next(alias for alias in aliases if alias in columns)
-                logger.debug(f"Found alias '{matched_alias}' for required column '{required_col}' in domain '{domain}'")
-        required_column_matches[domain] = matched_required_columns
-        logger.debug(f"Domain '{domain}' has {keyword_match_count} keyword matches and {matched_required_columns} required column matches")
+        logger.debug(f"Domain '{domain}' has {keyword_match_count} keyword matches")
     
     # Identify the best-matching domain
     best_match, max_score = max(domain_scores.items(), key=lambda x: x[1])
@@ -381,19 +365,8 @@ def infer_domain(columns):
         best_match = 'others'
         logger.info(f"All scores are zero, defaulting to domain 'others'")
     
-    # Check if at least 50% of the required columns exist
-    required_col_count = len(knowledge_base['domains'][best_match].get('required_columns', {}))
-    
-    if required_col_count > 0:
-        coverage = required_column_matches.get(best_match, 0) / required_col_count
-        insights_button_enabled = coverage >= 0.5
-        logger.info(f"Required column coverage for '{best_match}': {coverage:.2f} ({required_column_matches.get(best_match, 0)}/{required_col_count})")
-    else:
-        insights_button_enabled = False  # If no required columns are defined, disable button
-        logger.info(f"No required columns defined for '{best_match}', insights button disabled")
-    
-    logger.info(f"Final domain determination: '{best_match}', insights button enabled: {insights_button_enabled}")
-    return best_match, domain_scores, insights_button_enabled
+    logger.info(f"Final domain determination: '{best_match}'")
+    return best_match, domain_scores
 
 @app.route('/upload', methods=['POST'])
 def upload_file():
@@ -408,18 +381,16 @@ def upload_file():
         df = pd.read_csv(file)
         columns = df.columns.tolist()
         
-        domain, domain_scores, insights_button_enabled = infer_domain(columns)
+        domain, domain_scores = infer_domain(columns)
         # Ensure 'others' is used if no domain is detected (all scores are zero)
         if all(score == 0 for score in domain_scores.values()):
             domain = 'others'
         
-        # Make sure keys match what frontend expects
         return jsonify({
             'columns': columns,
-            'detected_domain': domain,  # This is the key field that frontend expects
+            'detected_domain': domain,
             'domain_scores': domain_scores,
             'all_domains': list(knowledge_base['domains'].keys()),
-            'insights_button_enabled': insights_button_enabled,
             'data': df.to_dict('records')
         })
     
