@@ -32,7 +32,8 @@ plt.style.use('ggplot')
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+app.config['CORS_HEADERS'] = 'Content-Type'
+CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
 
 # Configure logging
 logging.basicConfig(
@@ -416,6 +417,13 @@ def generate_insights():
         if df.empty:
             return jsonify({'error': 'Dataset is empty'}), 400
         
+        # Add specific handling for "others" domain
+        domain = data.get('domain', '')
+        if domain == 'others':
+            # Add debugging to identify potential issues with "others" domain
+            logger.info(f"Processing 'others' domain with columns: {df.columns.tolist()}")
+            # Check for any problematic columns or data that might cause errors
+            
         analyzer = DataAnalyzer(df)
         
         with ThreadPoolExecutor() as executor:
@@ -430,7 +438,8 @@ def generate_insights():
         return jsonify(results)
         
     except Exception as e:
-        logger.exception("Error generating insights")
+        logger.exception(f"Error generating insights: {str(e)}")
+        # Make sure CORS headers are sent even for error responses
         return jsonify({'error': str(e)}), 500
     
 
