@@ -33,7 +33,13 @@ plt.style.use('ggplot')
 # Initialize Flask app
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'Content-Type'
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+cors = CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True)
+
+@app.after_request
+def after_request(response):
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # Configure logging
 logging.basicConfig(
@@ -176,21 +182,45 @@ class DataAnalyzer:
             else:
                 self.df_cleaned[col].fillna('Unknown', inplace=True)
 
-    def generate_visualizations(self) -> List[Dict]:
-        """Generate visualizations with smart chart type selection for each data type"""
-        visualizations = []
-        
-        # Function to convert plotly figure to base64
-        def plotly_to_base64(fig):
+def generate_visualizations(self) -> List[Dict]:
+    """Generate visualizations with smart chart type selection for each data type"""
+    visualizations = []
+    
+    # Function to convert plotly figure to base64
+    def plotly_to_base64(fig):
+        try:
             buf = io.BytesIO()
             fig.write_image(buf, format='png', engine='kaleido')
             buf.seek(0)
             return base64.b64encode(buf.getvalue()).decode('utf-8')
-        
+        except Exception as e:
+            logger.error(f"Error converting plotly to base64: {str(e)}")
+            # Return a fallback empty image to prevent complete failure
+            empty_fig = go.Figure()
+            empty_fig.add_annotation(text="Visualization unavailable", showarrow=False)
+            buf = io.BytesIO()
+            empty_fig.write_image(buf, format='png', engine='kaleido')
+            buf.seek(0)
+            return base64.b64encode(buf.getvalue()).decode('utf-8')
+    
+    try:
         # Get column types
         numeric_cols = self.df.select_dtypes(include=['number']).columns
         categorical_cols = self.df.select_dtypes(include=['object', 'category']).columns
         date_cols = self.df.select_dtypes(include=['datetime']).columns
+        
+        # Check if we have valid columns to work with
+        if len(numeric_cols) == 0 and len(categorical_cols) == 0 and len(date_cols) == 0:
+            # Create a simple fallback visualization for empty/problematic datasets
+            fig = go.Figure()
+            fig.add_annotation(text="No suitable columns found for visualization", showarrow=False)
+            fig.update_layout(title='Dataset Visualization Issue')
+            visualizations.append({
+                'title': 'Dataset Analysis',
+                'image': plotly_to_base64(fig),
+                'type': 'info'
+            })
+            return visualizations
         
         # 1. Correlation Heatmap (only if multiple numeric columns exist)
         if len(numeric_cols) >= 2:
@@ -204,18 +234,15 @@ class DataAnalyzer:
         
         # 2. Smart distribution of numeric columns
         for col in numeric_cols:
-            # Check for distribution characteristics
             skewness = self.df[col].skew()
             uniqueness = self.df[col].nunique() / len(self.df[col])
             
-            if uniqueness < 0.05:  # Few unique values relative to data size
+            if uniqueness < 0.05:
                 # Use bar chart for discrete numeric data
-                fig = px.bar(self.df[col].value_counts().sort_index(), 
-                            title=f'Distribution of {col}')
+                fig = px.bar(self.df[col].value_counts().sort_index(), title=f'Distribution of {col}')
             else:
                 # Use histogram for continuous data
-                fig = px.histogram(self.df, x=col, nbins=50, 
-                                title=f'Distribution of {col}')
+                fig = px.histogram(self.df, x=col, nbins=50, title=f'Distribution of {col}')
             
             visualizations.append({
                 'title': f'Distribution Analysis - {col}',
@@ -231,21 +258,17 @@ class DataAnalyzer:
             unique_count = len(value_counts)
             
             if unique_count <= 5:
-                # Use pie chart for few categories
                 fig = px.pie(self.df, names=col, title=f'Distribution of {col}')
                 chart_type = 'pie'
             elif unique_count <= 10:
-                # Use donut chart for moderate number of categories
                 fig = px.pie(self.df, names=col, hole=0.3, title=f'Distribution of {col}')
                 chart_type = 'donut'
             elif unique_count <= 20:
-                # Use bar chart for many categories
                 fig = px.bar(value_counts, title=f'Distribution of {col}')
                 chart_type = 'bar'
             else:
-                # Skip visualization for too many categories
                 continue
-                
+            
             visualizations.append({
                 'title': f'{chart_type.capitalize()} Chart - {col}',
                 'image': plotly_to_base64(fig),
@@ -254,12 +277,10 @@ class DataAnalyzer:
         
         # 4. Time series visualization
         if date_cols.size > 0:
-            date_col = date_cols[0]  # Use the first date column
-            for num_col in numeric_cols[:3]:  # Limit to first 3 numeric columns
-                # Aggregate data by date to avoid overcrowding
+            date_col = date_cols[0]
+            for num_col in numeric_cols[:3]:
                 daily_data = self.df.groupby(date_col)[num_col].mean().reset_index()
-                fig = px.line(daily_data, x=date_col, y=num_col, 
-                            title=f'{num_col} Trend Over Time')
+                fig = px.line(daily_data, x=date_col, y=num_col, title=f'{num_col} Trend Over Time')
                 visualizations.append({
                     'title': f'Time Series - {num_col}',
                     'image': plotly_to_base64(fig),
@@ -270,10 +291,9 @@ class DataAnalyzer:
         
         # 5. Relationships between numeric columns (if multiple exist)
         if len(numeric_cols) >= 3:
-            # Use bubble chart for three numeric columns
-            fig = px.scatter(self.df, x=numeric_cols[0], y=numeric_cols[1], 
-                            size=numeric_cols[2], 
-                            title=f'Relationship: {numeric_cols[0]} vs {numeric_cols[1]} vs {numeric_cols[2]}')
+            fig = px.scatter(self.df, x=numeric_cols[0], y=numeric_cols[1],
+                             size=numeric_cols[2],
+                             title=f'Relationship: {numeric_cols[0]} vs {numeric_cols[1]} vs {numeric_cols[2]}')
             visualizations.append({
                 'title': 'Multi-variable Relationship',
                 'image': plotly_to_base64(fig),
@@ -284,15 +304,13 @@ class DataAnalyzer:
         
         # 6. Categorical vs Numerical (choose most interesting relationships)
         if len(categorical_cols) > 0 and len(numeric_cols) > 0:
-            # Select categorical column with moderate number of categories
             for cat_col in categorical_cols:
                 if 3 <= self.df[cat_col].nunique() <= 10:
-                    # Find numeric column with highest variance
                     variances = self.df[numeric_cols].var()
                     num_col = variances.idxmax()
                     
-                    fig = px.box(self.df, x=cat_col, y=num_col, 
-                            title=f'{num_col} Distribution by {cat_col}')
+                    fig = px.box(self.df, x=cat_col, y=num_col,
+                                 title=f'{num_col} Distribution by {cat_col}')
                     visualizations.append({
                         'title': f'Box Plot - {num_col} by {cat_col}',
                         'image': plotly_to_base64(fig),
@@ -300,9 +318,20 @@ class DataAnalyzer:
                         'xAxis': cat_col,
                         'yAxis': num_col
                     })
-                    break  # Only create one such visualization
-        
-        return visualizations
+                    break
+
+    except Exception as e:
+        logger.exception(f"Error generating visualizations: {str(e)}")
+        fig = go.Figure()
+        fig.add_annotation(text=f"Error generating visualizations: {str(e)}", showarrow=False)
+        fig.update_layout(title='Visualization Error')
+        visualizations.append({
+            'title': 'Error in Analysis',
+            'image': plotly_to_base64(fig),
+            'type': 'error'
+        })
+    
+    return visualizations
         
 
     def generate_insights(self) -> List[str]:
@@ -413,34 +442,47 @@ def generate_insights():
         if not data or 'data' not in data:
             return jsonify({'error': 'No data provided'}), 400
         
+        selected_domain = data.get('domain', 'unknown')
+        logger.info(f"Processing insights for domain: {selected_domain}")
+        
         df = pd.DataFrame(data.get('data'))
         if df.empty:
-            return jsonify({'error': 'Dataset is empty'}), 400
+            return jsonify({
+                'insights': ["Dataset is empty - no insights available"],
+                'visualizations': []
+            })
         
-        # Add specific handling for "others" domain
-        domain = data.get('domain', '')
-        if domain == 'others':
-            # Add debugging to identify potential issues with "others" domain
-            logger.info(f"Processing 'others' domain with columns: {df.columns.tolist()}")
-            # Check for any problematic columns or data that might cause errors
-            
+        # Log column information for debugging
+        logger.info(f"Dataset columns: {df.columns.tolist()}")
+        logger.info(f"Dataset dtypes: {df.dtypes.to_dict()}")
+        
         analyzer = DataAnalyzer(df)
         
-        with ThreadPoolExecutor() as executor:
-            insights_future = executor.submit(analyzer.generate_insights)
-            visualizations_future = executor.submit(analyzer.generate_visualizations)
-            
-            results = {
-                'insights': insights_future.result(),
-                'visualizations': visualizations_future.result()
-            }
+        try:
+            insights = analyzer.generate_insights()
+        except Exception as e:
+            logger.exception(f"Error generating insights: {str(e)}")
+            insights = [f"Error generating insights: {str(e)}"]
         
-        return jsonify(results)
+        try:
+            visualizations = analyzer.generate_visualizations()
+        except Exception as e:
+            logger.exception(f"Error generating visualizations: {str(e)}")
+            visualizations = []
+        
+        return jsonify({
+            'insights': insights,
+            'visualizations': visualizations
+        })
         
     except Exception as e:
-        logger.exception(f"Error generating insights: {str(e)}")
-        # Make sure CORS headers are sent even for error responses
-        return jsonify({'error': str(e)}), 500
+        logger.exception(f"Error in insights endpoint: {str(e)}")
+        # Return a proper error response with CORS headers
+        return jsonify({
+            'error': str(e),
+            'insights': ["An error occurred during analysis"],
+            'visualizations': []
+        })
     
 
 
